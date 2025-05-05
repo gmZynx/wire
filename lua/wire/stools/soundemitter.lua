@@ -26,7 +26,7 @@ end
 
 TOOL.ClientConVar = {
 	model     = "models/cheeze/wires/speaker.mdl",
-	sound     = "synth/square.wav",
+	sound     = "common/null.wav",
 }
 
 function TOOL:RightClick( trace )

@@ -451,7 +451,7 @@ register("gmod_wire_turret", {
 
 register("gmod_wire_soundemitter", {
 	["Model"] = {TYPE_STRING, "models/cheeze/wires/speaker.mdl", "Path to model"},
-	["sound"] = {TYPE_STRING, "synth/square.wav"},
+	["sound"] = {TYPE_STRING, "common/null.wav"},
 })
 
 register("gmod_wire_textscreen", {
