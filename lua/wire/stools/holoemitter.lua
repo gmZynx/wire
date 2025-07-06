@@ -60,7 +60,7 @@ function TOOL.BuildCPanel( panel )
 	WireToolHelpers.MakePresetControl(panel, "wire_holoemitter")
 	WireDermaExts.ModelSelect(panel, "wire_holoemitter_model", list.Get( "Wire_Misc_Tools_Models" ), 1)
 
-	panel:NumSlider("#Tool.wire_holoemitter.fadetime", "cl_wire_holoemitter_maxfadetime", 0, 100, 1)
+	panel:NumSlider("#Tool.wire_holoemitter.fadetime", "cl_wire_holoemitter_maxfadetime", 0, 5, 1)
 	panel:Help( "#Tool.wire_holoemitter.fadetime.description" )
 	panel:CheckBox("#Tool.wire_holoemitter.keeplatestdot", "wire_holoemitter_keeplatestdot")
 end

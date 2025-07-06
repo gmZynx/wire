@@ -396,10 +396,10 @@ function ENT:Think()
 			net.WriteUInt(v.Color.x,8)
 			net.WriteUInt(v.Color.y,8)
 			net.WriteUInt(v.Color.z,8)
-			net.WriteUInt(math.Clamp(v.FadeTime,0,100)*100,16)
+			net.WriteUInt(math.Clamp(v.FadeTime,0.01,5)*100,16)
 			net.WriteBit(v.LineBeam)
 			net.WriteBit(v.GroundBeam)
-			net.WriteUInt(math.Clamp(v.Size,0,100)*100, 16)
+			net.WriteUInt(math.Clamp(v.Size,0,500)*100, 16)
 		end
 	net.Broadcast()
 
