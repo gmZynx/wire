@@ -58,7 +58,7 @@ if CLIENT then
 		render.SetMaterial(light)
 
 		local color = self:GetColor()
-		color.a = math.Clamp((1000 - math.Clamp(distance, 32, 800)) * visdot, 0, 100)
+		color.a = math.Clamp((5000 - math.Clamp(distance, 32, 5000)) * visdot, 0, 100)
 
 		local size = math.Clamp(distance * visdot * (light_info.Scale or 2), 64, 512)
 		render.DrawSprite(lightpos, size, size, color)
@@ -99,11 +99,11 @@ function ENT:Switch(on)
 	flashlight:SetLocalAngles(light_info.Angle or angle_zero)
 	flashlight:SetKeyValue("enableshadows", 1)
 	flashlight:SetKeyValue("nearz", light_info.NearZ or 12)
-	flashlight:SetKeyValue("farz", singleplayer and self.Dist or math.Clamp(self.Dist, 64, 2048))
+	flashlight:SetKeyValue("farz", singleplayer and self.Dist or math.Clamp(self.Dist, 64, 5000))
 	flashlight:SetKeyValue("lightfov", singleplayer and self.FOV or math.Clamp(self.FOV, 10, 170))
 
 	local color = self:GetColor()
-	local brightness = singleplayer and self.Brightness or math.Clamp(self.Brightness, 0, 8)
+	local brightness = singleplayer and self.Brightness or math.Clamp(self.Brightness, 0, 100)
 	flashlight:SetKeyValue("lightcolor", Format("%i %i %i 255", color.r * brightness, color.g * brightness, color.b * brightness))
 	flashlight:Spawn()
 
@@ -121,9 +121,9 @@ function ENT:UpdateLight()
 	local singleplayer = game.SinglePlayer()
 	flashlight:Input("SpotlightTexture", NULL, NULL, self.Texture)
 	flashlight:Input("FOV", NULL, NULL, tostring(singleplayer and self.FOV or math.Clamp(self.FOV, 10, 170)))
-	flashlight:SetKeyValue("farz", singleplayer and self.Dist or math.Clamp(self.Dist, 64, 2048))
+	flashlight:SetKeyValue("farz", singleplayer and self.Dist or math.Clamp(self.Dist, 64, 5000))
 
-	local brightness = singleplayer and self.Brightness or math.Clamp(self.Brightness, 0, 8)
+	local brightness = singleplayer and self.Brightness or math.Clamp(self.Brightness, 0, 100)
 	flashlight:SetKeyValue("lightcolor", Format("%i %i %i 255", color.r * brightness, color.g * brightness, color.b * brightness))
 end
 

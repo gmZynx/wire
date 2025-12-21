@@ -227,15 +227,15 @@ function ENT:TriggerInput(iname, value)
 	elseif (iname == "RGB") then
 		self.R, self.G, self.B = math.Clamp(value[1],0,255), math.Clamp(value[2],0,255), math.Clamp(value[3],0,255)
 	elseif (iname == "GlowBrightness") then
-		if not game.SinglePlayer() then value = math.Clamp( value, 0, 10 ) end
+		if not game.SinglePlayer() then value = math.Clamp( value, 0, 100 ) end
 		self.brightness = value
 		self:SetBrightness( value )
 	elseif (iname == "GlowSize") then
-		if not game.SinglePlayer() then value = math.Clamp( value, 0, 1024 ) end
+		if not game.SinglePlayer() then value = math.Clamp( value, 0, 2048 ) end
 		self.size = value
 		self:SetSize( value )
 	elseif (iname == "SpriteSize") then
-		if not game.SinglePlayer() then value = math.Clamp( value, 0, 256 ) end
+		if not game.SinglePlayer() then value = math.Clamp( value, 0, 2560 ) end
 		self:SetSpriteSize( value )
 	end
 
@@ -254,9 +254,9 @@ function ENT:Setup(directional, radiant, glow, brightness, size, r, g, b, sprite
 	self.B = b or 255
 
 	if not game.SinglePlayer() then
-		self.brightness = math.Clamp( self.brightness, 0, 10 )
-		self.size = math.Clamp( self.size, 0, 1024 )
-		self.spritesize = math.Clamp( self.spritesize, 0, 256 )
+		self.brightness = math.Clamp( self.brightness, 0, 100 )
+		self.size = math.Clamp( self.size, 0, 2048 )
+		self.spritesize = math.Clamp( self.spritesize, 0, 2560 )
 	end
 
 	self:SetOn(startOn == nil or startOn)
