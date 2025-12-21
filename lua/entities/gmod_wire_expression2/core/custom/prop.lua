@@ -844,9 +844,7 @@ end
 
 [nodiscard]
 e2function number entity:propCanSetDupeable()
-	local isOk, Val = pcall(ValidAction, self, this, "noDupe")
-	if not isOk then return 0 end
-
+	if not IsValid(this) then return self:throw("Invalid entity!", 0) end
 	return canMarkDupeable(this, self.player) and 1 or 0
 end
 
@@ -948,7 +946,7 @@ e2function void entity:propSetFriction(number friction)
 end
 
 e2function number entity:propGetFriction()
-	if not ValidAction(self, this, "friction") then return 0 end
+	if not IsValid(this) then return self:throw("Invalid entity!", 0) end
 	return this:GetFriction()
 end
 
@@ -976,10 +974,9 @@ e2function void entity:propPhysicalMaterial(string physprop)
 end
 
 e2function string entity:propPhysicalMaterial()
-	if not ValidAction(self, this, "physprop") then return "" end
+	if not IsValid(this) then return self:throw("Invalid entity!", "") end
 	local phys = this:GetPhysicsObject()
-	if phys:IsValid() then return phys:GetMaterial() or "" end
-	return ""
+	return phys:IsValid() and phys:GetMaterial() or ""
 end
 
 e2function void entity:propSetVelocity(vector velocity)
@@ -1268,7 +1265,7 @@ e2function void entity:ragdollSetAng(angle rot)
 end
 
 e2function table entity:ragdollGetPose()
-	if not ValidAction(self, this) then return end
+	if not IsValid(this) then return self:throw("Invalid entity!", newE2Table()) end
 	local pose = newE2Table()
 	local bones = GetBones(this)
 	local originPos, originAng = bones[0]:GetPos(), bones[0]:GetAngles()
