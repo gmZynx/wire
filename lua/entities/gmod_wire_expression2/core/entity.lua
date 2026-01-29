@@ -796,11 +796,16 @@ e2function void entity:podStripWeapons()
 end
 
 e2function void entity:podSetName(string name)
-	if not IsValid(this) or not this:IsVehicle() or not this.VehicleTable or not this.VehicleTable.Name then return self:throw("Invalid vehicle!", nil) end
+	if not IsValid(this) or not this:IsVehicle() then return self:throw("Invalid vehicle!", nil) end
 	if not isOwner(self, this) then return self:throw("You do not own this entity!", nil) end
 	if hook.Run("Wire_CanName", name, this, self.player) == false then return self:throw("A hook prevented this function from running") end
-	this.VehicleTable.Name = name:sub(1, 200)
+	this.E2_VehicleName = string.sub( name, 1, 200 )
 end
+
+-- this wont do shit for the vanilla killfeed until rubat calls the hook properly c:
+hook.Add( "GetDeathNoticeEntityName", "E2_podSetName", function( ent )
+	return ent.E2_VehicleName
+end )
 
 --[[******************************************************************************]]
 
