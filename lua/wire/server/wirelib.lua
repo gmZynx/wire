@@ -1196,6 +1196,7 @@ function WireLib.MakeWireEnt( pl, Data, ... )
 	if ent.Setup then ent:Setup(...) end
 
 	if IsValid(pl) then pl:AddCount( Data.Class:sub(6).."s", ent ) end
+	hook.Run( "PlayerSpawnedSENT", pl, ent )
 
 	local phys = ent:GetPhysicsObject()
 	if IsValid(phys) then
