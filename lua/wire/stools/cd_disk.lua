@@ -8,6 +8,7 @@ if (CLIENT) then
 
 	list.Set( "Wire_Laser_Disk_Models", "models/venompapa/wirecd_small.mdl", true )
 	list.Set( "Wire_Laser_Disk_Models", "models/venompapa/wirecd_medium.mdl", true )
+	list.Set( "Wire_Laser_Disk_Models", "models/venompapa/wirecd_large.mdl", true )
 	list.Set( "Wire_Laser_Disk_Models", "models/venompapa/wirecd_huge.mdl", true )
 
 	TOOL.Information = {
@@ -36,8 +37,8 @@ function TOOL:RightClick(trace)
 
 	if (trace.Entity and trace.Entity:IsValid()) then
 		if (trace.Entity:GetClass() == "prop_physics") then
-			self:GetOwner():ConCommand('wire_cd_disk_model "'..trace.Entity:GetModel()..'"\n')
-			self:GetOwner():ConCommand('wire_cd_disk_skin "'..trace.Entity:GetSkin()..'"\n')
+			WireLib.SetConvar(self:GetOwner(), "wire_cd_disk_model", trace.Entity:GetModel())
+			WireLib.SetConvar(self:GetOwner(), "wire_cd_disk_skin", trace.Entity:GetSkin())
 		end
 	end
 

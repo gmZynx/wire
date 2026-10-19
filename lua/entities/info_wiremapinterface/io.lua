@@ -100,7 +100,10 @@ end
 
 -- To cleanup and get the in-/outputs information.
 local function copyAndSanitizeToPortRegister(register, registerTmp)
-	register = register or newPortRegister()
+	if not register or not register.empty then
+	 	register = newPortRegister()
+	end
+
 	register:empty()
 
 	if not registerTmp then
@@ -130,7 +133,9 @@ function ENT:UpdatePorts()
 	local wireEnts = self:GetWiredEntities()
 
 	for key, wireEnt in ipairs(wireEnts) do
-		wireEnt:_WMI_AddPorts(self.WireInputRegister, self.WireOutputRegister)
+		if wireEnt._WMI_AddPorts then
+			wireEnt:_WMI_AddPorts(self.WireInputRegister, self.WireOutputRegister)
+		end
 	end
 end
 
@@ -174,7 +179,7 @@ function ENT:PrepairOutputGlobals(inputData, wireValue, wireEnt, wireDevice, own
 		return
 	end
 
-	-- This can be usefull if a lua_run entity is triggered
+	-- This can be useful if a lua_run entity is triggered
 	-- Because entity.Fire and entity.AcceptInput are not run synchronously in the same frame, we use them in a custom entity.AcceptInput detour.
 	-- So we store them for later use in a custom entity.AcceptInput detour.
 
@@ -202,7 +207,7 @@ function ENT:PrepairOutputGlobals(inputData, wireValue, wireEnt, wireDevice, own
 end
 
 function ENT:SetupOutputGlobals(globals)
-	-- This can be usefull if a lua_run entity is triggered
+	-- This can be useful if a lua_run entity is triggered
 
 	local G = _G
 
@@ -289,7 +294,7 @@ local function deturedAcceptInput(this, name, activator, caller, data, ...)
 		errOrResult = tostring(errOrResult or "")
 
 		if errOrResult ~= "" then
-			message = caller:FormatString(": Lua error in target AcceptInput:\n  Wire input '%s [%s]' -> Hammer output '%s@%s'\n  %s", globals.WIRE_NAME, globals.WIRE_TYPE, caller:FormatEntityString(this), name, errOrResult)
+			local message = caller:FormatString(": Lua error in target AcceptInput:\n  Wire input '%s [%s]' -> Hammer output '%s@%s'\n  %s", globals.WIRE_NAME, globals.WIRE_TYPE, caller:FormatEntityString(this), name, errOrResult)
 			ErrorNoHaltWithStack(message)
 		end
 
@@ -338,7 +343,7 @@ function ENT:TriggerWireOutputSafe(wireEnt, wireOutputName, wireValue, ...)
 	err = tostring(err or "")
 
 	if err ~= "" then
-		message = self:FormatString(": Lua error at Wire output '%s':\n%s", wireOutputName, err)
+		local message = self:FormatString(": Lua error at Wire output '%s':\n%s", wireOutputName, err)
 		ErrorNoHaltWithStack(message)
 	end
 
@@ -358,7 +363,7 @@ function ENT:TriggerHammerOutputSafe(hammerOutputName, activator, hammerValue, .
 	err = tostring(err or "")
 
 	if err ~= "" then
-		message = self:FormatString(": Lua error at Hammer output '%s':\n%s", hammerOutputName, err)
+		local message = self:FormatString(": Lua error at Hammer output '%s':\n%s", hammerOutputName, err)
 		ErrorNoHaltWithStack(message)
 	end
 

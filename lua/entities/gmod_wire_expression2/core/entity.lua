@@ -159,9 +159,7 @@ e2function number entity:setEditProperty(string key, string value)
 	if not IsValid(this) then return self:throw("Invalid entity!", 0) end
 	if not isOwner(self, this) then return self:throw("You do not own this entity!", 0) end
 	if not this.Editable then return self:throw("Tried to edit non-editable entity!", 0) end
-	if not canProperty(self.player, this, "editentity") then return self:throw("Gamemode disallowed editing this entity!", 0) end
 
-	key = key:lower()
 	local edit = this:GetEditingData()[key]
 	if not edit then return self:throw("Property '" .. key .. "' does not exist on entity!", 0) end
 	if not canEditVariable(this, self.player, key, value, edit) then return self:throw("Server disallowed editing this property!", 0) end
@@ -1059,6 +1057,12 @@ local function validateCanTrail(self, ent)
 	if not checkOwner(self) then return end
 	if not IsValid(ent) then return self:throw("Invalid entity!", nil) end
 	if not isOwner(self, ent) then return self:throw("You do not own this entity!", nil) end
+
+	local time = CurTime()
+	if ent._lastTrailSet == time then return self:throw("Can't modify trail more than once per frame!", nil) end
+	ent._lastTrailSet = time
+
+	return true
 end
 
 local function removeTrail(self, ent)
@@ -1094,7 +1098,7 @@ __e2setcost(50)
 
 --- Removes the trail from <this>.
 e2function void entity:removeTrails()
-	validateCanTrail(self, this)
+	if not validateCanTrail(self, this) then return end
 	removeTrail(self, this)
 end
 
@@ -1103,7 +1107,7 @@ __e2setcost(75)
 --- StartSize, EndSize, Length, Material, Color (RGB), Alpha
 --- Adds a trail to <this> with the specified attributes.
 e2function void entity:setTrails(startSize, endSize, length, string material, vector color, alpha)
-	validateCanTrail(self, this)
+	if not validateCanTrail(self, this) then return end
 
 	local Data = composedata(startSize, endSize, length, material, color, alpha)
 	if not Data then return end
@@ -1112,7 +1116,7 @@ e2function void entity:setTrails(startSize, endSize, length, string material, ve
 end
 
 e2function void entity:setTrails(startSize, endSize, length, string material, vector4 color)
-	validateCanTrail(self, this)
+	if not validateCanTrail(self, this) then return end
 
 	local Data = composedata(startSize, endSize, length, material, { color[1], color[2], color[3] }, color[4])
 	if not Data then return end
@@ -1121,7 +1125,7 @@ e2function void entity:setTrails(startSize, endSize, length, string material, ve
 end
 
 e2function void entity:setTrails(startSize, endSize, length, string material)
-	validateCanTrail(self, this)
+	if not validateCanTrail(self, this) then return end
 
 	local Data = composedata(startSize, endSize, length, material, { 255, 255, 255 }, 255)
 	if not Data then return end
@@ -1131,7 +1135,7 @@ end
 
 -- + Attachments
 e2function void entity:setTrails(startSize, endSize, length, string material, vector color, alpha, attachmentID, additive)
-	validateCanTrail(self, this)
+	if not validateCanTrail(self, this) then return end
 
 	local Data = composedata(startSize, endSize, length, material, color, alpha)
 	if not Data then return end

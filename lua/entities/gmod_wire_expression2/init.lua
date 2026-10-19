@@ -159,23 +159,20 @@ function ENT:Execute(script, context)
 	if not ok then
 		local _catchable, msg, trace = E2Lib.unpackException(msg)
 
-		if msg == "exit" then
-			self:UpdatePerf(selfTbl)
-		elseif msg == "perf" then
-			local trace = context.trace or trace
-
+		if msg == "perf" then
+			trace = context.trace or trace
 			self:UpdatePerf(selfTbl)
 			self:Error("Expression 2 (" .. selfTbl.name .. "): tick quota exceeded (at line " .. trace.start_line .. ", char " .. trace.start_col .. ")", "tick quota exceeded")
-		elseif trace then
-			self:Error("Expression 2 (" .. selfTbl.name .. "): Runtime error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
-		else
-			local trace = context.trace or trace
-
-			self:Error("Expression 2 (" .. selfTbl.name .. "): Internal error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
+		elseif msg ~= "exit" then
+			if trace then
+				self:Error("Expression 2 (" .. selfTbl.name .. "): Runtime error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
+			else
+				trace = context.trace or trace
+				self:Error("Expression 2 (" .. selfTbl.name .. "): Internal error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
+			end
 		end
 	end
 
-	context.time = context.time + (SysTime() - bench)
 	context.stackdepth = context.stackdepth - 1
 
 	local forceTriggerOutputs = selfTbl.first or selfTbl.duped
@@ -207,6 +204,8 @@ function ENT:Execute(script, context)
 		end
 	end
 
+	context.time = context.time + (SysTime() - bench)
+
 	if context.prfcount + context.prf - e2_softquota > e2_hardquota then
 		local trace = context.trace
 		self:Error("Expression 2 (" .. selfTbl.name .. "): tick quota exceeded (at line " .. trace.start_line .. ", char " .. trace.start_col .. ")", "hard quota exceeded")
@@ -229,6 +228,7 @@ function ENT:ExecuteEvent(evt, args)
 	local handlers = selfTbl.registered_events[evt]
 	if not handlers then return end
 
+	local bench = SysTime()
 	self:PCallHook("preexecute")
 
 	for name, handler in pairs(handlers) do
@@ -238,27 +238,25 @@ function ENT:ExecuteEvent(evt, args)
 			self:Error("Expression 2 (" .. selfTbl.name .. "): stack quota exceeded", "stack quota exceeded")
 		end
 
-		local bench = SysTime()
 		local ok, msg = pcall(handler, context, args)
 
 		if not ok then
 			local _catchable, msg, trace = E2Lib.unpackException(msg)
 
-			if msg == "exit" then
-				self:UpdatePerf(selfTbl)
-			elseif msg == "perf" then
-				local trace = context.trace
+			if msg == "perf" then
+				trace = context.trace
 				self:UpdatePerf(selfTbl)
 				self:Error("Expression 2 (" .. selfTbl.name .. "): tick quota exceeded (at line " .. trace.start_line .. ", char " .. trace.start_col .. ")", "tick quota exceeded")
-			elseif trace then
-				self:Error("Expression 2 (" .. selfTbl.name .. "): Runtime error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
-			else
-				local trace = context.trace
-				self:Error("Expression 2 (" .. selfTbl.name .. "): Internal error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
+			elseif msg ~= "exit" then
+				if trace then
+					self:Error("Expression 2 (" .. selfTbl.name .. "): Runtime error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
+				else
+					trace = context.trace
+					self:Error("Expression 2 (" .. selfTbl.name .. "): Internal error '" .. msg .. "' at line " .. trace.start_line .. ", char " .. trace.start_col, "script error")
+				end
 			end
 		end
 
-		context.time = context.time + (SysTime() - bench)
 		context.stackdepth = context.stackdepth - 1
 	end
 
@@ -275,6 +273,8 @@ function ENT:ExecuteEvent(evt, args)
 			globalScope[k] = fixDefault(wire_expression_types2[var.type][2])
 		end
 	end
+
+	context.time = context.time + (SysTime() - bench)
 
 	if context.prfcount + context.prf - e2_softquota > e2_hardquota then
 		local trace = context.trace
@@ -399,55 +399,27 @@ function GlobalChips:remove(remove_chip)
 	end
 end
 
-function GlobalChips:findMaxTimeChip(chips)
-	local max_chip, max_time = nil, 0
-
-	for _, chip in ipairs(chips) do
-		local tab = chip:GetTable()
-		if tab.error then continue end
-
-		local context = tab.context
-		if not context then continue end
-
-		if context.timebench > max_time then
-			max_time = context.timebench
-			max_chip = chip
-		end
-	end
-
-	return max_chip, max_time
-end
-
 E2Lib.PlayerChips = E2Lib.PlayerChips or setmetatable({}, GlobalChips)
 
 hook.Add("Think", "E2_Think", function()
 	local global_time = 0
+	local worst_ply, worst_time = nil, 0
 
-	if e2_timequota > 0 then
-		for ply, chips in pairs(E2Lib.PlayerChips) do
-			global_time = global_time + chips:checkCpuTime()
-		end
-	else
-		for ply, chips in pairs(E2Lib.PlayerChips) do
-			global_time = global_time + chips:getTotalTime()
+	for ply, chips in pairs(E2Lib.PlayerChips) do
+		local time = e2_timequota > 0 and chips:checkCpuTime() or chips:getTotalTime()
+		global_time = global_time + time
+
+		if time > worst_time then
+			worst_ply, worst_time = ply, time
 		end
 	end
 
-	if e2_globalmax > 0 and global_time > e2_globalmax then
-		-- It will be faster to just iterate over all chips from now on
-		local chips = ents.FindByClass("gmod_wire_expression2")
+	if e2_globalmax > 0 and global_time > e2_globalmax and worst_ply then
+		local max_chip = E2Lib.PlayerChips[worst_ply]:findMaxTimeChip()
 
-		while global_time > e2_globalmax do
-			local max_chip, max_time = E2Lib.PlayerChips:findMaxTimeChip(chips)
-
-			if max_chip then
-				global_time = global_time - max_time
-				max_chip:Error("Expression 2 (" .. max_chip.name .. "): Global time quota exceeded", "global time quota exceeded")
-				max_chip:Destruct()
-			else
-				-- It shouldn't happen, but if something breaks, it will prevent an infinity loop
-				break
-			end
+		if max_chip then
+			max_chip:Error("Expression 2 (" .. max_chip.name .. "): Global time quota exceeded", "global time quota exceeded")
+			max_chip:Destruct()
 		end
 	end
 end)
@@ -828,6 +800,11 @@ function ENT:ApplyDupeInfo(ply, ent, info, GetEntByID, GetConstByID)
 				self.GlobalScope[k] = istable(v) and Angle(v[1], v[2], v[3]) or v
 			elseif vartype == "v" then
 				self.GlobalScope[k] = istable(v) and Vector(v[1], v[2], v[3]) or v
+			elseif vartype == "t" then
+				if istable(v) and getmetatable(v) == nil then
+					setmetatable(v, WireLib.E2Table)
+				end
+				self.GlobalScope[k] = v
 			else
 				self.GlobalScope[k] = v
 			end

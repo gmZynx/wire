@@ -20,7 +20,7 @@ local tostring = tostring
 local Vector = Vector
 local Color = Color
 
-local isvector, isnumber, istable, isstring, isangle, IsEntity, IsColor = isvector, isnumber, istable, isstring, isangle, IsEntity, IsColor
+local isvector, isnumber, istable, isstring, isangle, isentity, IsColor = isvector, isnumber, istable, isstring, isangle, isentity, IsColor
 
 local HasPorts = WireLib.HasPorts -- Very important for checks!
 local entIsValid = FindMetaTable("Entity").IsValid
@@ -146,7 +146,7 @@ WireLib.DT = {
 		Zero = function()
 			return NULL
 		end,
-		Validator = IsEntity
+		Validator = isentity
 	},
 	STRING = {
 		Zero = function()
@@ -898,25 +898,34 @@ do -- class OutputIterator
 	OutputIterator.__index = OutputIterator
 
 	function OutputIterator:Add(ent, iname, value)
-		table.insert(self, { Entity = ent, IName = iname, Value = value })
+		local last = self.last + 1
+
+		self.last = last
+		self[last] = { Entity = ent, IName = iname, Value = value }
 	end
 
 	function OutputIterator:Process()
 		if self.Processing then return end -- should not occur
 		self.Processing = true
 
-		while #self > 0 do
-			local nextelement = self[1]
-			table.remove(self, 1)
+		while self.first <= self.last do
+			local first = self.first
+			local nextelement = self[first]
+
+			self[first] = nil
+			self.first = first + 1
 
 			WireLib.TriggerInput(nextelement.Entity, nextelement.IName, nextelement.Value, self)
 		end
+
+		self.first = 1
+		self.last = 0
 
 		self.Processing = nil
 	end
 
 	function WireLib.CreateOutputIterator()
-		return setmetatable({}, OutputIterator)
+		return setmetatable({ first = 1, last = 0 }, OutputIterator)
 	end
 end -- class OutputIterator
 
@@ -1582,7 +1591,18 @@ if not WireLib.PatchedDuplicator then
 end
 
 local uniqueSoundsTbl = setmetatable({}, {__index=function(t,k) local r={[1]=0} t[k]=r return r end})
-local maxUniqueSounds = CreateConVar("wire_sounds_unique_max", "200", FCVAR_ARCHIVE, "The maximum number of sound paths a player is allowed to cache")
+local maxUniqueSounds = CreateConVar("wire_sounds_unique_max", "200", FCVAR_ARCHIVE, "The maximum number of sound paths a player is allowed to cache", 0)
+local maxSoundLevel = CreateConVar("wire_sound_max_level", "255", FCVAR_ARCHIVE, "The maximum sounds volume (0 to disable)", 0, 255)
+
+function WireLib.ClampSoundLevel(level)
+	local max_level = maxSoundLevel:GetInt()
+
+	if max_level > 0 then
+		return level <= 0 and max_level or math.min(level, max_level)
+	else
+		return level
+	end
+end
 
 function WireLib.SoundExists(path, ply)
 	-- Limit length and remove invalid chars
@@ -1590,23 +1610,66 @@ function WireLib.SoundExists(path, ply)
 
 	-- Extract sound flags. See https://developer.valvesoftware.com/wiki/Soundscripts#Sound_characters
 	local flags, checkpath = string.match(path, "^([^%w_/%.]*)(.*)")
+
 	if #flags > 2 or string.match(flags, "[^#@<>%^%)}]") then
 		path = checkpath
+	end
+
+	-- Disallow too loud sounds
+	local max_level = maxSoundLevel:GetInt()
+
+	if max_level > 0 then
+		local sound_data = sound.GetProperties(checkpath)
+
+		if sound_data then
+			local sound_level = sound_data.level
+
+			-- We can't clamp soundlevel of soundscript, take it's sound directly
+			if sound_level <= 0 or sound_level > max_level then
+				local sounds = sound_data.sound
+				path = istable(sounds) and sounds[math.random(#sounds)] or sounds
+			end
+		end
 	end
 
 	if ply then
 		-- A player can only use a certain number of unique sound paths
 		local playerSounds = uniqueSoundsTbl[ply:SteamID()]
+
 		if not playerSounds[checkpath] then
-			if playerSounds[1] >= maxUniqueSounds:GetInt() then return end
+			if playerSounds[1] >= maxUniqueSounds:GetInt() then
+				return
+			end
+
 			playerSounds[checkpath] = true
 			playerSounds[1] = playerSounds[1] + 1
 		end
-	elseif not (istable(sound.GetProperties(checkpath)) or file.Exists("sound/" .. checkpath, "GAME")) then
+	elseif not sound.GetProperties(checkpath) and not file.Exists("sound/" .. checkpath, "GAME") then
 		return
 	end
 
 	return path
+end
+
+local uniqueFontsTbl = setmetatable({}, {__index=function(t,k) local r={[1]=0} t[k]=r return r end})
+local maxUniqueFonts = CreateConVar("wire_fonts_unique_max", "50", FCVAR_ARCHIVE, "The maximum number of fonts a player is allowed to create", 0)
+
+function WireLib.CheckFont(font, ply)
+	if ply then
+		-- A player can only create a certain number of fonts
+		local playerFonts = uniqueFontsTbl[ply:SteamID()]
+
+		if not playerFonts[font] then
+			if playerFonts[1] >= maxUniqueFonts:GetInt() then
+				return
+			end
+
+			playerFonts[font] = true
+			playerFonts[1] = playerFonts[1] + 1
+		end
+	end
+
+	return font
 end
 
 -- Notify --
