@@ -91,8 +91,8 @@ local valid_tracers = {
 function ENT:FixDPS()
 	local fireRate = math.Clamp( math.ceil( self.delay / engine.TickInterval() ) * engine.TickInterval(), engine.TickInterval(), 1 )
 
-	local damage = self.damage
-	local dps = self.numbullets * damage / fireRate
+	local damage = self.damage or 0
+	local dps = ( self.numbullets or 1 ) * damage / fireRate
 
 	if dps > 100 then
 		damage = damage * 100 / dps
